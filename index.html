@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Document</title>
+
+<style>
+
+* {
+
+padding: 0px;
+
+margin: 0px;
+
+text-decoration: none;
+
+}
+
+html, body {
+
+width: 100%;
+
+height: 100%;
+
+}
+
+div {
+
+display: block;
+
+}
+
+textarea {
+
+width: 100%;
+
+margin: 20px;
+
+resize: none;
+
+line-height: 20px;
+
+padding: 5px;
+
+}
+
+input {
+
+width: 300px;
+
+heigth: 100px;
+
+padding: 5px;
+
+margin: 20px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div>
+
+<textarea name="n_usuario" id="i_usuario" cols="100" rows="30" class="entradas">
+
+Coloque separados por comas:
+
+1.- El número de nudos de la viga continua
+
+2.- Las elasticidades
+
+3.- Las inercias
+
+4.- Las cargas
+
+5.- Las longitudes
+
+Ingreso de datos:
+
+1.-[5]
+
+2.-[2100000,2100000,2100000,2100000]
+
+3.-[0.000675,0.000675,0.000675,0.000675]
+
+4.-[5,4,6,3]
+
+5.-[4,5,3,6]
+
+Solución del problema de la viga continua
+
+  i      Ei             Ii               wi           Li         di           Di             fi          Ti          Di           xi             Mi       Mj        Vi       Vj </textarea>
+
+<input type="button" value="Resolver" class="resolver">
+
+</div>
+
+<script>
+
+document.querySelector('.resolver').addEventListener('click', (e) => {
+
+e.preventDefault();
+
+/*Definimos las variables*/
+
+var ni;
+
+var Ei = [];
+
+var Ii = [];
+
+var Wi = [];
+
+var Li = [];
+
+var di = [];
+
+var Di = [];
+
+var fi = [];
+
+var Ti = [];
+
+var DDi= [];
+
+var xi = [];
+
+var Mi = [];
+
+var Mj = [];
+
+var Vi = [];
+
+var Vj = [];
+
+/*Leemos los 5 vectores de datos*/
+
+var datos = document.querySelector('.entradas').value;
+
+datos = datos.split("[");
+
+ni = datos[1].split("]");
+
+ni= parseInt(ni[0]);
+
+leer(Ei, ni, datos[2]);
+
+leer(Ii, ni, datos[3]);
+
+leer(Wi, ni, datos[4]);
+
+leer(Li, ni, datos[5]);
+
+function leer(va, co, da){
+
+var dat = da.split(",");
+
+va[0]=0;
+
+for (i = 0; i < co-1; i++) {
+
+va[i+1] = dat[i];
+
+};
+
+va[co-1] = va[co-1].split("]");
+
+va[co-1] = va[co-1][0];
+
+va[co]=0;
+
+};
+
+/*Construimos el sistema de ecuaciones lineales*/
+
+di[0]=0;
+
+di[ni]=0;
+
+Di[0]=0;
+
+fi[0]=0;
+
+for (i = 1; i < ni; i++) {
+
+di[i]=2*Ei[i]*Ii[i]/Li[i];
+
+};
+
+for (i = 1; i <= ni; i++) {
+
+Di[i]= 2*(di[i]+di[i-1]);
+
+};
+
+for (i = 1; i <= ni; i++) {
+
+fi[i]=(1/12)*(Wi[i-1]*Li[i-1]*Li[i-1] - Wi[i]*Li[i]*Li[i])
+
+};
+
+/*Resolvemos el sistema de ecuaciones lineales*/
+
+Ti[ni]=1;
+
+DDi[ni] = Di[ni];
+
+for (i= ni-1; i > 0; i--) {
+
+Ti[i]=-DDi[i+1]/di[i];
+
+DDi[i]=Ti[i]*Di[i] + Ti[i+1]*di[i];
+
+};
+
+var sumpro=0;
+
+for (i = 1; i <= ni; i++) {
+
+sumpro += Ti[i]*fi[i];
+
+};
+
+xi[1]=sumpro/(Ti[1]*Di[1]+Ti[2]*di[1]);
+
+xi[2]=(fi[1]-Di[1]*xi[1])/di[1];
+
+for (i = 3; i <= ni; i++) {
+
+xi[i]=(fi[i-1]-Di[i-1]*xi[i-1]-di[i-2]*xi[i-2])/di[i-1];
+
+};
+
+/*Calculamos los momentos y cortantes*/
+
+Mi[ni]=0;
+
+Mj[ni]=0;
+
+Vi[ni]=0;
+
+Vj[ni]=0;
+
+for (i = 1; i < ni; i++) {
+
+Mi[i]= Wi[i]*Li[i]*Li[i]/12 + 2*(Ei[i]*Ii[i]/Li[i])*(2*xi[i]+xi[i+1]);
+
+Mj[i]= -Wi[i]*Li[i]*Li[i]/12 + 2*(Ei[i]*Ii[i]/Li[i])*(xi[i]+2*xi[i+1]);
+
+Vi[i]= 0.5*Wi[i]*Li[i] + (Mi[i]+Mj[i])/Li[i];
+
+Vj[i]= 0.5*Wi[i]*Li[i] - (Mi[i]+Mj[i])/Li[i];
+
+};
+
+/*Presentamos los resultados*/
+
+var cadena;
+
+for (i = 1; i <= ni; i++) {
+
+datos = document.querySelector('.entradas').value;
+
+cadena = "\n" + (parseFloat(i).toFixed(2)).toString().padStart(6,"_") + (parseFloat(Ei[i]).toFixed(2)).toString().padStart(13,"_") + (parseFloat(Ii[i]).toFixed(6)).toString().padStart(13,"_") + (parseFloat(Wi[i]).toFixed(2)).toString().padStart(13,"_") + (parseFloat(Li[i]).toFixed(2)).toString().padStart(13,"_") + (parseFloat(di[i]).toFixed(2)).toString().padStart(13,"_") + (parseFloat(Di[i]).toFixed(2)).toString().padStart(13,"_") + (parseFloat(fi[i]).toFixed(2)).toString().padStart(13,"_") + (parseFloat(Ti[i]).toFixed(2)).toString().padStart(13,"_") + (parseFloat(DDi[i]).toFixed(2)).toString().padStart(15,"_") + (parseFloat(xi[i]).toFixed(6)).toString().padStart(13,"_") + (parseFloat(Mi[i]).toFixed(2)).toString().padStart(10,"_") + (parseFloat(Mj[i]).toFixed(2)).toString().padStart(10,"_") + (parseFloat(Vi[i]).toFixed(2)).toString().padStart(10,"_") + (parseFloat(Vj[i]).toFixed(2)).toString().padStart(10,"_");
+
+document.querySelector('.entradas').value = datos + cadena;
+
+};
+
+});
+
+</script>
+
+</body>
+
+</html>
